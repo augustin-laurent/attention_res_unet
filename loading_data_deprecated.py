@@ -78,7 +78,6 @@ class BasicDataset(Dataset):
                     mask[img == v] = i
                 else:
                     mask[(img == v).all(-1)] = i
-
             return mask
 
         else:
@@ -89,7 +88,6 @@ class BasicDataset(Dataset):
 
             if (img > 1).any():
                 img = img / 255.0
-
             return img
 
     def __getitem__(self, idx):

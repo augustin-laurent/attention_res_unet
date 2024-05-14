@@ -15,17 +15,17 @@ from tqdm import tqdm
 from model import R2AttU_Net
 from evaluate import evaluate
 from loss_functions import dice_loss
-from loading_data import BasicDataset
+from load_data import SegDataset
 
 PATH_TO_DIR = "/mnt/z/CRCT/"
 
-DIR_IMG = Path(PATH_TO_DIR + "HE/HE_cell/")
-DIR_MASK = Path(PATH_TO_DIR + "ERG/ERG_cell/")
+DIR_IMG = Path(PATH_TO_DIR + "HE_cell/")
+DIR_MASK = Path(PATH_TO_DIR + "ERG_cell/")
 DIR_SAVE = Path("checkpoints")
 
 def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_rate: float = 1e-4, val_percent: float = 0.1, save_checkpoints: bool = False, img_scale: float = 0.5, amp: bool = False, weight_decay: float = 1e-8, gradiant_clipping: float = 1.0):
     try:
-        dataset = BasicDataset(DIR_IMG, DIR_MASK, img_scale)
+        dataset = SegDataset(DIR_IMG, DIR_MASK, img_scale)
     except (AssertionError, RuntimeError, FileNotFoundError) as e:
         print(e)
         return
@@ -76,10 +76,10 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
                 with torch.autocast(device.type if device.type != "cuda" or "mps" else "cpu", enabled=amp):
+                    #print(images.shape, true_masks.shape)
                     masks_pred = model(images)
 
-                    #print(torch.nn.functional.sigmoid(masks_pred.squeeze(1)).shape, true_masks.float().squeeze(1).shape)
-                    loss = criterion(masks_pred.squeeze(1), true_masks.float())
+                    loss = criterion(masks_pred.squeeze(1), true_masks.float().squeeze(1))
                     loss += dice_loss(torch.nn.functional.sigmoid(masks_pred.squeeze(1)), true_masks.float().squeeze(1), multiclass=False)
                 
                 optimizer.zero_grad(set_to_none=True)
@@ -143,14 +143,14 @@ if __name__ == "__main__":
     if device.type == "cuda":
         torch.backends.cudnn.benchmark = True
     logging.info(f"Using device {device}")
-    model = R2AttU_Net(img_ch=4, output_ch=1)
+    model = R2AttU_Net(img_ch=3, output_ch=1)
     model = model.to(memory_format=torch.channels_last)
     logging.info(f"Network:\n"
                  f"\t{model.img_ch} input channels\n"
                  f"\t{model.output_ch} output channels (classes)\n")
     model.to(device=device)
     try:
-        train_model(model= model, epochs=20, batch_size=16, learning_rate=1e-4, device=device, img_scale=0.512, val_percent=0.1, amp=True, save_checkpoints=True)
+        train_model(model= model, epochs=20, batch_size=16, learning_rate=1e-4, device=device, img_scale=0.5, val_percent=0.1, amp=True, save_checkpoints=True)
     except torch.cuda.OutOfMemoryError:
         logging.error("Detected OOM error."
                       "Enabling checkpoint to reduce memory usage, keep in mind this slow down training."
