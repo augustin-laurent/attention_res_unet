@@ -87,6 +87,8 @@ class SegDataset(Dataset):
             pil_img = pil_img.convert("L")
             data = np.asarray(pil_img)
             data = data[np.newaxis, ...]
+            if (data > 1).any():
+                data = data / 255.0
             return data
 
         else:

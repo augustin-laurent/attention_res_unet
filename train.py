@@ -21,6 +21,8 @@ PATH_TO_DIR = "/mnt/z/CRCT/"
 
 DIR_IMG = Path(PATH_TO_DIR + "HE_cell/")
 DIR_MASK = Path(PATH_TO_DIR + "ERG_cell/")
+DIR_IMG_VAL = Path(PATH_TO_DIR + "HE_eval/")
+DIR_MASK_VAL = Path(PATH_TO_DIR + "ERG_eval/")
 DIR_SAVE = Path("checkpoints")
 
 def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_rate: float = 1e-4, val_percent: float = 0.1, save_checkpoints: bool = False, img_scale: float = 0.5, amp: bool = False, weight_decay: float = 1e-8, gradiant_clipping: float = 1.0):
@@ -30,13 +32,18 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
         print(e)
         return
     
-    num_val = int(len(dataset) * val_percent)
-    n_train = len(dataset) - num_val
-    train_set, val_set = torch.utils.data.random_split(dataset, [n_train, num_val], generator=torch.Generator().manual_seed(42))
+    try:
+        val_dataset = SegDataset(DIR_IMG_VAL, DIR_MASK_VAL, img_scale)
+    except (AssertionError, RuntimeError, FileNotFoundError) as e:
+        print(e)
+        return
+
+    n_train = len(dataset)
+    n_val = len(val_dataset)
 
     loader_args = dict(batch_size=batch_size, num_workers=os.cpu_count() - 2, pin_memory=True)
-    train_loader = torch.utils.data.DataLoader(train_set, shuffle=True, **loader_args)
-    val_loader = torch.utils.data.DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
+    train_loader = torch.utils.data.DataLoader(dataset, shuffle=True, **loader_args)
+    val_loader = torch.utils.data.DataLoader(val_dataset, shuffle=False, drop_last=True, **loader_args)
 
     tracker = wandb.init(project="Attention_Res_Unet", resume="allow", anonymous="must")
     tracker.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, val_percent=val_percent, img_scale=img_scale, amp=amp))
@@ -48,7 +55,7 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
         Batch size: {batch_size}\n
         Learning rate: {learning_rate}\n
         Training size: {n_train}\n
-        Validation size: {num_val}\n
+        Validation size: {n_val}\n
         Checkpoints: {save_checkpoints}\n
         Image scaling: {img_scale}\n
         Mixed precision: {amp}\n
@@ -76,11 +83,11 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
                 with torch.autocast(device.type if device.type != "cuda" or "mps" else "cpu", enabled=amp):
-                    #print(images.shape, true_masks.shape)
+                    # Canal useless we can drop them here
                     masks_pred = model(images)
-
-                    loss = criterion(masks_pred.squeeze(1), true_masks.float().squeeze(1))
-                    loss += dice_loss(torch.nn.functional.sigmoid(masks_pred.squeeze(1)), true_masks.float().squeeze(1), multiclass=False)
+                    print(masks_pred.shape, true_masks.shape)
+                    loss = criterion(masks_pred, true_masks.float())
+                    loss += dice_loss(torch.nn.functional.sigmoid(masks_pred), true_masks.float(), multiclass=False)
                 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -109,7 +116,7 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                         val_score = evaluate(model, val_loader, device, amp)
                         scheduler.step(val_score)
 
-                        logging.info("Validation Dice Score : {}".format(val_score))
+                        logging.info("Validation Dice Score : {}, {}".format(val_score).format(val_score * max(len(val_loader), 1)))
                         try:
                             tracker.log({
                                 "Learning rate": optimizer.param_groups[0]["lr"],
