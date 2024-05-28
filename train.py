@@ -17,12 +17,12 @@ from evaluate import evaluate
 from loss_functions import dice_loss
 from load_data import SegDataset
 
-PATH_TO_DIR = "/mnt/z/CRCT/"
+PATH_TO_DIR = "/users/m2ida/m2ida/dataset_segm/"
 
-DIR_IMG = Path(PATH_TO_DIR + "HE_cell/")
-DIR_MASK = Path(PATH_TO_DIR + "ERG_cell/")
-DIR_IMG_VAL = Path(PATH_TO_DIR + "HE_eval/")
-DIR_MASK_VAL = Path(PATH_TO_DIR + "ERG_eval/")
+DIR_IMG = Path(PATH_TO_DIR + "train" +"HE_cell/")
+DIR_MASK = Path(PATH_TO_DIR + "train"  +"ERG_cell/")
+DIR_IMG_VAL = Path(PATH_TO_DIR + "eval" + "HE_eval/")
+DIR_MASK_VAL = Path(PATH_TO_DIR + "eval" +"ERG_eval/")
 DIR_SAVE = Path("checkpoints")
 
 def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_rate: float = 1e-4, val_percent: float = 0.1, save_checkpoints: bool = False, img_scale: float = 0.5, amp: bool = False, weight_decay: float = 1e-8, gradiant_clipping: float = 1.0):
