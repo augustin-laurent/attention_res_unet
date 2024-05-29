@@ -17,8 +17,8 @@ from evaluate import evaluate
 from loss_functions import dice_loss
 from load_data import SegDataset
 
-#PATH_TO_DIR = "/users/m2ida/m2ida/dataset_segm/"
-PATH_TO_DIR = "/mnt/d/CRCT/"
+PATH_TO_DIR = "/users/m2ida/m2ida/dataset_segm/"
+#PATH_TO_DIR = "/mnt/d/CRCT/"
 
 DIR_IMG = Path(PATH_TO_DIR + "train/" +"HE_cell/")
 DIR_MASK = Path(PATH_TO_DIR + "train/"  +"ERG_cell/")
@@ -47,8 +47,8 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
     train_loader = torch.utils.data.DataLoader(dataset, shuffle=True, **loader_args)
     val_loader = torch.utils.data.DataLoader(val_dataset, shuffle=False, drop_last=True, **loader_args)
 
-    #tracker = wandb.init(project="Attention_Res_Unet", resume="allow", anonymous="must")
-    #tracker.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, val_percent=val_percent, img_scale=img_scale, amp=amp))
+    tracker = wandb.init(project="Attention_Res_Unet", resume="allow", anonymous="must")
+    tracker.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, val_percent=val_percent, img_scale=img_scale, amp=amp))
 
     logging.info(
         f"""Starting training:\n
@@ -99,7 +99,7 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                 pbar.update(images.shape[0])
                 global_step += 1
                 epoch_loss += loss.item()
-                #tracker.log({"train_loss": loss.item(), "learning_rate": optimizer.param_groups[0]["lr"], "step": global_step, "epoch": epoch})
+                tracker.log({"train_loss": loss.item(), "learning_rate": optimizer.param_groups[0]["lr"], "step": global_step, "epoch": epoch})
                 pbar.set_postfix(**{"loss (batch)": loss.item()})
 
                 division_step = (n_train // (5 * batch_size))
@@ -118,22 +118,22 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                         scheduler.step(val_score)
 
                         logging.info("Validation Dice Score : {}, {}".format(val_score).format(val_score * max(len(val_loader), 1)))
-                        # try:
-                        #     # tracker.log({
-                        #     #     "Learning rate": optimizer.param_groups[0]["lr"],
-                        #     #     "Validation Dice": val_score,
-                        #     #     "Images": wandb.Image(images[0].cpu()),
-                        #     #     "Masks": {
-                        #     #         "True": wandb.Image(true_masks[0].cpu()),
-                        #     #         "Pred": wandb.Image(masks_pred.argmax(dim=1)[0].float().cpu()),
-                        #     #     },
-                        #     #     "Step": global_step,
-                        #     #     "Epoch": epoch,
-                        #     #     **histograms
-                        #     # })
-                        # except Exception as e:
-                        #     print(e)
-                        #     pass
+                        try:
+                            tracker.log({
+                                "Learning rate": optimizer.param_groups[0]["lr"],
+                                "Validation Dice": val_score,
+                                "Images": wandb.Image(images[0].cpu()),
+                                "Masks": {
+                                    "True": wandb.Image(true_masks[0].cpu()),
+                                    "Pred": wandb.Image(masks_pred.argmax(dim=1)[0].float().cpu()),
+                                },
+                                "Step": global_step,
+                                "Epoch": epoch,
+                                **histograms
+                            })
+                        except Exception as e:
+                            print(e)
+                            pass
                 
         if save_checkpoints:
             Path(DIR_SAVE).mkdir(parents=True, exist_ok=True)
@@ -142,7 +142,7 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
             torch.save(state_dict, str(DIR_SAVE / f"model_{epoch}.pth"))
             logging.info(f"Checkpoint {epoch} saved !")
 
-    #tracker.finish(quiet=True)
+    tracker.finish(quiet=True)
 
 if __name__ == "__main__":
     wandb.login()
