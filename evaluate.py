@@ -19,7 +19,7 @@ def evaluate(model, val_loader, device, amp):
             masks_pred = model(images)
             
             assert true_masks.min() >= 0 and true_masks.max() <= 1, "For binary segmentation masks, the values should be 0 or 1."
-            masks_pred = (torch.nn.functional.sigmoid(masks_pred) >= 0.5).float()
+            masks_pred = (torch.nn.functional.sigmoid(masks_pred.squeeze(1)) >= 0.5).float()
             print(masks_pred.shape, true_masks.shape)
             dice_score += dice_coeff(masks_pred, true_masks, reduce_batch_first=False)
             
