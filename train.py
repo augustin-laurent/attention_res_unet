@@ -17,12 +17,13 @@ from evaluate import evaluate
 from loss_functions import dice_loss
 from load_data import SegDataset
 
-PATH_TO_DIR = "/users/m2ida/m2ida/dataset_segm/"
+PATH_TO_DIR = "/mnt/d/CRCT/"
 
 DIR_IMG = Path(PATH_TO_DIR + "train/" +"HE_cell/")
 DIR_MASK = Path(PATH_TO_DIR + "train/"  +"ERG_cell/")
 DIR_IMG_VAL = Path(PATH_TO_DIR + "eval/" + "HE_eval/")
 DIR_MASK_VAL = Path(PATH_TO_DIR + "eval/" +"ERG_eval/")
+
 DIR_SAVE = Path("checkpoints")
 
 def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_rate: float = 1e-4, val_percent: float = 0.1, save_checkpoints: bool = False, img_scale: float = 0.5, amp: bool = False, weight_decay: float = 1e-8, gradiant_clipping: float = 1.0):
@@ -85,7 +86,6 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                 with torch.autocast(device.type if device.type != "cuda" or "mps" else "cpu", enabled=amp):
                     # Canal useless we can drop them here
                     masks_pred = model(images)
-                    print(masks_pred.shape, true_masks.shape)
                     loss = criterion(masks_pred.squeeze(1), true_masks.float())
                     loss += dice_loss(torch.nn.functional.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                 
@@ -141,10 +141,10 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
             torch.save(state_dict, str(DIR_SAVE / f"model_{epoch}.pth"))
             logging.info(f"Checkpoint {epoch} saved !")
 
-    tracker.finish(quiet=True)
+    #tracker.finish(quiet=True)
 
 if __name__ == "__main__":
-    wandb.login()
+    #wandb.login()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
