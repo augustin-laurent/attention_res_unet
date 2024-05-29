@@ -86,8 +86,8 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                     # Canal useless we can drop them here
                     masks_pred = model(images)
                     print(masks_pred.shape, true_masks.shape)
-                    loss = criterion(masks_pred, true_masks.float())
-                    loss += dice_loss(torch.nn.functional.sigmoid(masks_pred), true_masks.float(), multiclass=False)
+                    loss = criterion(masks_pred.squeeze(1), true_masks.float())
+                    loss += dice_loss(torch.nn.functional.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
                 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
