@@ -17,7 +17,7 @@ from evaluate import evaluate
 from loss_functions import dice_loss
 from load_data import SegDataset
 
-PATH_TO_DIR = "/mnt/d/CRCT/"
+PATH_TO_DIR = "/users/m2ida/m2ida/dataset_segm/"
 
 DIR_IMG = Path(PATH_TO_DIR + "train/" +"HE_cell/")
 DIR_MASK = Path(PATH_TO_DIR + "train/"  +"ERG_cell/")
@@ -84,7 +84,6 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
                 with torch.autocast(device.type if device.type != "cuda" or "mps" else "cpu", enabled=amp):
-                    # Canal useless we can drop them here
                     masks_pred = model(images)
                     loss = criterion(masks_pred.squeeze(1), true_masks.float())
                     loss += dice_loss(torch.nn.functional.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
@@ -102,7 +101,8 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                 tracker.log({"train_loss": loss.item(), "learning_rate": optimizer.param_groups[0]["lr"], "step": global_step, "epoch": epoch})
                 pbar.set_postfix(**{"loss (batch)": loss.item()})
 
-                division_step = 1 if n_train % batch_size == 0 else (n_train // batch_size) + 1
+                division_step = (n_train // (5 * batch_size))
+                #division_step = 1 if n_train % batch_size == 0 else (n_train // batch_size) + 1
                 if division_step > 0:
                     if global_step % division_step == 0:
                         histograms = {}
@@ -141,10 +141,10 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
             torch.save(state_dict, str(DIR_SAVE / f"model_{epoch}.pth"))
             logging.info(f"Checkpoint {epoch} saved !")
 
-    #tracker.finish(quiet=True)
+    tracker.finish(quiet=True)
 
 if __name__ == "__main__":
-    #wandb.login()
+    wandb.login()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
