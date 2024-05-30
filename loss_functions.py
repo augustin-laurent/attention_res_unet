@@ -5,7 +5,7 @@ def _flatten(x: torch.Tensor) -> torch.Tensor:
     return x.view(-1)
 
 
-def dice_coeff(input: Tensor, target: Tensor, epsilon: float = 1):
+def dice_coeff(input: Tensor, target: Tensor, reduce_batch_first: bool = False, epsilon: float = 1):
     assert input.size() == target.size()
     #assert input.dim() == 3 or not reduce_batch_first
 

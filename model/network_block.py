@@ -129,8 +129,8 @@ class Attention_block(nn.Module):
         g1 = self.W_g(g)
         x1 = self.W_x(x)
 
-        if g1.size() != x1.size():
-            g1 = F.interpolate(g1, size=x1.size()[2:])
+        # if g1.size() != x1.size():
+        #     g1 = F.interpolate(g1, size=x1.size()[2:])
 
         psi = self.relu(g1+x1)
         psi = self.psi(psi)
