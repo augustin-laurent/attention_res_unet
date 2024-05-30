@@ -2,14 +2,15 @@ import torch
 from torch import Tensor
 
 def _flatten(x: torch.Tensor) -> torch.Tensor:
-    return x.view(x.shape[0], -1)
+    return x.view(-1)
 
-def dice_coeff(input: Tensor, target: Tensor, reduce_batch_first: bool = False, epsilon: float = 1):
+
+def dice_coeff(input: Tensor, target: Tensor, epsilon: float = 1):
     assert input.size() == target.size()
     #assert input.dim() == 3 or not reduce_batch_first
 
     #sum_dim = (-1, -2) if input.dim() == 2 or not reduce_batch_first else (-1, -2, -3)
-    target = _flatten(target).to(dtype=input.dtype)
+    target = _flatten(target)
     input = _flatten(input)
 
     inter = 2 * (input * target).sum(-1)

@@ -212,7 +212,7 @@ class AttU_Net(nn.Module):
 
 
 class R2AttU_Net(nn.Module):
-    def __init__(self,img_ch=4,output_ch=1,t=2):
+    def __init__(self,img_ch=3,output_ch=1,t=2):
         super(R2AttU_Net,self).__init__()
         
         self.img_ch = img_ch

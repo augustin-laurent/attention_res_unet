@@ -16,14 +16,17 @@ from pathlib import Path
 from torch.utils.data import Dataset
 
 
-def load_image(filename):
+def load_image(filename, is_mask=False):
     ext = splitext(filename)[1]
     if ext == '.npy':
         return Image.fromarray(np.load(filename))
     elif ext in ['.pt', '.pth']:
         return Image.fromarray(torch.load(filename).numpy())
     else:
-        return Image.open(filename).convert("RGB")
+        if is_mask:
+            return Image.open(filename).convert("L")
+        else:
+            return Image.open(filename).convert("RGB")
     
 def unique_mask_values(idx, mask_dir, mask_suffix):
     mask_file = list(mask_dir.glob(idx + mask_suffix + '.*'))[0]
