@@ -117,7 +117,7 @@ def train_model(model, device, epochs: int = 5, batch_size: int = 16, learning_r
                         val_score = evaluate(model, val_loader, device, amp)
                         scheduler.step(val_score)
 
-                        logging.info("Validation Dice Score : {}, {}".format(val_score).format(val_score * max(len(val_loader), 1)))
+                        logging.info('Validation Dice score: {}'.format(val_score))
                         try:
                             tracker.log({
                                 "Learning rate": optimizer.param_groups[0]["lr"],
